@@ -256,7 +256,11 @@ function syncButtons() {{
 }}
 
 document.getElementById('btn-all').addEventListener('click', () => {{
-  COMPANIES.forEach(c => selected.add(c));
+  if (selected.size === COMPANIES.length) {{
+    selected.clear();           // all → deselect all
+  }} else {{
+    COMPANIES.forEach(c => selected.add(c));  // any state → select all
+  }}
   syncButtons(); redrawAll();
 }});
 
@@ -264,7 +268,7 @@ document.querySelectorAll('.co-btn[data-co]').forEach(btn => {{
   btn.addEventListener('click', () => {{
     const co = btn.dataset.co;
     if (selected.has(co)) {{
-      if (selected.size > 1) selected.delete(co);
+      selected.delete(co);
     }} else {{
       selected.add(co);
     }}
@@ -294,18 +298,18 @@ for (const cfg of CHART_CFGS) {{
     .sub   {{ text-align:center; color:#666; margin-bottom:16px; font-size:14px; }}
 
     #filter-bar {{
-      display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center;
+      display:flex; flex-wrap:nowrap; gap:6px; align-items:center; justify-content:center;
       background:#fff; border:1px solid #dce2ea; border-radius:10px;
-      padding:12px 20px; margin:0 0 22px 0;
+      padding:10px 16px; margin:0 0 22px 0; overflow-x:auto;
     }}
     .filter-label {{
-      font-size:13px; font-weight:700; color:#1a1a2e; margin-right:4px; white-space:nowrap;
+      font-size:12px; font-weight:700; color:#1a1a2e; margin-right:2px; white-space:nowrap;
     }}
     .co-btn {{
-      padding:6px 15px; border-radius:20px; border:2px solid #c8d0db;
-      background:#fff; color:#555; font-size:13px; font-weight:600;
+      padding:4px 10px; border-radius:20px; border:2px solid #c8d0db;
+      background:#fff; color:#555; font-size:11px; font-weight:600;
       cursor:pointer; transition:background 0.15s, color 0.15s, border-color 0.15s;
-      white-space:nowrap;
+      white-space:nowrap; flex-shrink:0;
     }}
     .co-btn:hover  {{ border-color:#0093D0; color:#0093D0; }}
     .co-btn.active {{ background:#1a1a2e; color:#fff; border-color:#1a1a2e; }}
