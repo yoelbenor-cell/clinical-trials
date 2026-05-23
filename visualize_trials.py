@@ -1,4 +1,4 @@
-"""
+﻿"""
 Clinical trials dashboard — top 10 pharma, 8 countries (Israel + 7 European), 2015-2025.
 Interactive company filter: click to select/deselect, multi-select, All button.
 """
@@ -40,13 +40,14 @@ YEARS  = list(range(MIN_YEAR, MAX_YEAR + 1))
 def load_data():
     conn = sqlite3.connect(DB_PATH)
     df_trials = pd.read_sql(
-        "SELECT nct_id, company, phase, start_year, enrollment FROM trials "
+        "SELECT nct_id, company, phase, start_year FROM trials "
         "WHERE start_year BETWEEN ? AND ? AND phase IN ('PHASE1','PHASE2','PHASE3')",
         conn, params=(MIN_YEAR, MAX_YEAR),
     )
     placeholders = ",".join("?" * len(COUNTRIES))
     df_countries = pd.read_sql(
-        f"SELECT nct_id, country FROM trial_countries WHERE country IN ({placeholders})",
+        f"SELECT nct_id, country, COALESCE(site_count, 1) AS site_count "
+        f"FROM trial_countries WHERE country IN ({placeholders})",
         conn, params=COUNTRIES,
     )
     conn.close()
@@ -64,20 +65,18 @@ def build_company_data(df):
                           for ph in PHASES}
                     for co in COMPANIES}
 
-    trial_data  = empty()
-    enroll_data = empty()
+    trial_data = empty()
+    sites_data = empty()
 
     trial_agg = (
         df.groupby(["company", "phase", "country", "start_year"])["nct_id"]
         .nunique()
         .reset_index(name="cnt")
     )
-    enroll_agg = (
-        df.drop_duplicates(subset=["nct_id", "country"])
-        .dropna(subset=["enrollment"])
-        .groupby(["company", "phase", "country", "start_year"])["enrollment"]
+    sites_agg = (
+        df.groupby(["company", "phase", "country", "start_year"])["site_count"]
         .sum()
-        .reset_index(name="enr")
+        .reset_index(name="sites")
     )
 
     for row in trial_agg.itertuples(index=False):
@@ -85,12 +84,12 @@ def build_company_data(df):
         if co in trial_data and ph in trial_data[co] and ct in trial_data[co][ph] and yr in trial_data[co][ph][ct]:
             trial_data[co][ph][ct][yr] = int(cnt)
 
-    for row in enroll_agg.itertuples(index=False):
-        co, ph, ct, yr, enr = row.company, row.phase, row.country, row.start_year, row.enr
-        if co in enroll_data and ph in enroll_data[co] and ct in enroll_data[co][ph] and yr in enroll_data[co][ph][ct]:
-            enroll_data[co][ph][ct][yr] = int(enr)
+    for row in sites_agg.itertuples(index=False):
+        co, ph, ct, yr, sites = row.company, row.phase, row.country, row.start_year, row.sites
+        if co in sites_data and ph in sites_data[co] and ct in sites_data[co][ph] and yr in sites_data[co][ph][ct]:
+            sites_data[co][ph][ct][yr] = int(sites)
 
-    return trial_data, enroll_data
+    return trial_data, sites_data
 
 
 def build_dashboard():
@@ -99,11 +98,11 @@ def build_dashboard():
     print(f"  {df['nct_id'].nunique()} unique trials loaded")
 
     print("Building per-company data matrices...")
-    trial_data, enroll_data = build_company_data(df)
+    trial_data, sites_data = build_company_data(df)
 
     # ── Chart configurations (order = display order) ──────────────────────
     SECTION_A = "Section A — Number of Trials Started"
-    SECTION_B = "Section B — Participants Enrolled"
+    SECTION_B = "Section B — Research Sites per Country"
 
     chart_configs = []
     for ph in PHASES:
@@ -131,23 +130,23 @@ def build_dashboard():
     for ph in PHASES:
         label = ph.replace("PHASE", "Phase ")
         chart_configs.append({
-            "id":      f"chart_{ph.lower()}_enroll",
+            "id":      f"chart_{ph.lower()}_sites",
             "section": SECTION_B,
             "label":   label,
-            "type":    "enrollment",
+            "type":    "sites",
             "phases":  [ph],
-            "title":   f"<b>{label}</b> — Participants Enrolled per Year",
-            "ylabel":  "Participants",
+            "title":   f"<b>{label}</b> — Research Sites per Year",
+            "ylabel":  "Research Sites",
             "height":  520,
         })
     chart_configs.append({
-        "id":      "chart_all_enroll",
+        "id":      "chart_all_sites",
         "section": SECTION_B,
         "label":   "All Phases — Combined",
-        "type":    "enrollment",
+        "type":    "sites",
         "phases":  PHASES,
-        "title":   "<b>All Phases Combined</b> — Total Participants Enrolled per Year (Ph.1+Ph.2+Ph.3)",
-        "ylabel":  "Participants",
+        "title":   "<b>All Phases Combined</b> — Total Research Sites per Year (Ph.1+Ph.2+Ph.3)",
+        "ylabel":  "Research Sites",
         "height":  560,
     })
 
@@ -176,9 +175,8 @@ def build_dashboard():
             if current_section == SECTION_B:
                 body_blocks.append(
                     '<p style="font-family:Arial;color:#555;font-size:13px;margin:0 0 20px 4px">'
-                    "Each trial’s total enrollment is attributed to its start year. "
-                    "Trials without enrollment data are excluded. "
-                    "Note: enrollment is per-trial globally — all countries in the trial share the same number.</p>"
+                    'Number of active research sites (locations) per country per year, summed across selected companies. '
+                    'Source: ClinicalTrials.gov location data.</p>'
                 )
         body_blocks.append(f'<div style="{sub_style}">{cfg["label"]}</div>')
         body_blocks.append(f'<div style="{card_style}"><div id="{cfg["id"]}"></div></div>')
@@ -191,7 +189,7 @@ def build_dashboard():
     # ── JavaScript ────────────────────────────────────────────────────────
     js = f"""
 const TRIAL_DATA   = {json.dumps(trial_data)};
-const ENROLL_DATA  = {json.dumps(enroll_data)};
+const SITES_DATA   = {json.dumps(sites_data)};
 const COMPANIES    = {json.dumps(COMPANIES)};
 const COUNTRIES    = {json.dumps(COUNTRIES)};
 const COLORS       = {json.dumps(COUNTRY_COLORS)};
@@ -241,7 +239,7 @@ function layout(title, ylabel, height) {{
 function redrawAll() {{
   const sel = Array.from(selected);
   for (const cfg of CHART_CFGS) {{
-    const src = cfg.type === 'trials' ? TRIAL_DATA : ENROLL_DATA;
+    const src = cfg.type === 'trials' ? TRIAL_DATA : SITES_DATA;
     Plotly.react(cfg.id, traces(aggregate(src, sel, cfg.phases)),
                  layout(cfg.title, cfg.ylabel, cfg.height));
   }}
@@ -278,7 +276,7 @@ document.querySelectorAll('.co-btn[data-co]').forEach(btn => {{
 
 // Init
 for (const cfg of CHART_CFGS) {{
-  const src = cfg.type === 'trials' ? TRIAL_DATA : ENROLL_DATA;
+  const src = cfg.type === 'trials' ? TRIAL_DATA : SITES_DATA;
   Plotly.newPlot(cfg.id, traces(aggregate(src, COMPANIES, cfg.phases)),
                  layout(cfg.title, cfg.ylabel, cfg.height), {{responsive:true}});
 }}
