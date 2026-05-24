@@ -11,6 +11,18 @@ OUT_PATH = "pharma_trials_dashboard.html"
 MIN_YEAR = 2015
 MAX_YEAR = 2025
 
+# Population in millions — World Bank WDI (2024-2025: estimates)
+POPULATION = {
+    "Israel":      {2015:8.38,  2016:8.54,  2017:8.71,  2018:8.88,  2019:9.05,  2020:9.22,  2021:9.45,  2022:9.66,  2023:9.84,  2024:10.01, 2025:10.20},
+    "Belgium":     {2015:11.24, 2016:11.31, 2017:11.35, 2018:11.43, 2019:11.51, 2020:11.59, 2021:11.59, 2022:11.66, 2023:11.74, 2024:11.87, 2025:11.95},
+    "Switzerland": {2015:8.33,  2016:8.40,  2017:8.48,  2018:8.55,  2019:8.60,  2020:8.67,  2021:8.74,  2022:8.82,  2023:8.96,  2024:9.10,  2025:9.18},
+    "Austria":     {2015:8.66,  2016:8.74,  2017:8.80,  2018:8.85,  2019:8.90,  2020:8.93,  2021:9.04,  2022:9.10,  2023:9.10,  2024:9.15,  2025:9.21},
+    "Sweden":      {2015:9.80,  2016:9.92,  2017:10.07, 2018:10.18, 2019:10.29, 2020:10.33, 2021:10.42, 2022:10.52, 2023:10.55, 2024:10.65, 2025:10.75},
+    "Denmark":     {2015:5.69,  2016:5.73,  2017:5.75,  2018:5.80,  2019:5.81,  2020:5.82,  2021:5.84,  2022:5.88,  2023:5.96,  2024:6.03,  2025:6.10},
+    "Norway":      {2015:5.19,  2016:5.23,  2017:5.27,  2018:5.30,  2019:5.33,  2020:5.37,  2021:5.41,  2022:5.43,  2023:5.52,  2024:5.59,  2025:5.67},
+    "Ireland":     {2015:4.63,  2016:4.71,  2017:4.78,  2018:4.86,  2019:4.94,  2020:5.00,  2021:5.13,  2022:5.24,  2023:5.31,  2024:5.41,  2025:5.51},
+}
+
 COMPANIES = [
     "Pfizer", "Johnson & Johnson", "Roche", "Novartis", "Merck",
     "AbbVie", "Bristol-Myers Squibb", "AstraZeneca", "Sanofi", "Eli Lilly",
@@ -195,8 +207,10 @@ const COUNTRIES    = {json.dumps(COUNTRIES)};
 const COLORS       = {json.dumps(COUNTRY_COLORS)};
 const YEARS        = {json.dumps(YEARS)};
 const CHART_CFGS   = {json.dumps(chart_configs)};
+const POPULATION   = {json.dumps(POPULATION)};
 
-let selected = new Set(COMPANIES);
+let selected   = new Set(COMPANIES);
+let perCapita  = false;
 
 function aggregate(dataObj, companies, phases) {{
   const result = {{}};
@@ -206,6 +220,10 @@ function aggregate(dataObj, companies, phases) {{
       for (const co of companies)
         for (const ph of phases)
           s += (dataObj[co]?.[ph]?.[ct]?.[yr]) || 0;
+      if (perCapita) {{
+        const pop = POPULATION[ct]?.[yr];
+        return pop ? +((s / pop).toFixed(3)) : 0;
+      }}
       return s;
     }});
   }}
@@ -236,12 +254,16 @@ function layout(title, ylabel, height) {{
   }};
 }}
 
+function yLabel(base) {{
+  return perCapita ? base + ' per Million Population' : base;
+}}
+
 function redrawAll() {{
   const sel = Array.from(selected);
   for (const cfg of CHART_CFGS) {{
     const src = cfg.type === 'trials' ? TRIAL_DATA : SITES_DATA;
     Plotly.react(cfg.id, traces(aggregate(src, sel, cfg.phases)),
-                 layout(cfg.title, cfg.ylabel, cfg.height));
+                 layout(cfg.title, yLabel(cfg.ylabel), cfg.height));
   }}
 }}
 
@@ -274,11 +296,19 @@ document.querySelectorAll('.co-btn[data-co]').forEach(btn => {{
   }});
 }});
 
+document.getElementById('btn-per-capita').addEventListener('click', () => {{
+  perCapita = !perCapita;
+  const btn = document.getElementById('btn-per-capita');
+  btn.classList.toggle('active', perCapita);
+  btn.textContent = perCapita ? 'Per Million Pop. ✓' : 'Per Million Pop.';
+  redrawAll();
+}});
+
 // Init
 for (const cfg of CHART_CFGS) {{
   const src = cfg.type === 'trials' ? TRIAL_DATA : SITES_DATA;
   Plotly.newPlot(cfg.id, traces(aggregate(src, COMPANIES, cfg.phases)),
-                 layout(cfg.title, cfg.ylabel, cfg.height), {{responsive:true}});
+                 layout(cfg.title, yLabel(cfg.ylabel), cfg.height), {{responsive:true}});
 }}
 """
 
@@ -311,8 +341,17 @@ for (const cfg of CHART_CFGS) {{
     }}
     .co-btn:hover  {{ border-color:#0093D0; color:#0093D0; }}
     .co-btn.active {{ background:#1a1a2e; color:#fff; border-color:#1a1a2e; }}
-    #btn-all       {{ border-color:#0093D0; color:#0093D0; }}
+    #btn-all        {{ border-color:#0093D0; color:#0093D0; }}
     #btn-all.active {{ background:#0093D0; color:#fff; border-color:#0093D0; }}
+    #view-bar {{
+      display:flex; justify-content:flex-end; margin:0 0 18px 0;
+    }}
+    #btn-per-capita {{
+      padding:5px 14px; border-radius:20px; border:2px solid #2A9D8F;
+      background:#fff; color:#2A9D8F; font-size:12px; font-weight:700;
+      cursor:pointer; transition:background 0.15s, color 0.15s;
+    }}
+    #btn-per-capita.active {{ background:#2A9D8F; color:#fff; }}
   </style>
 </head>
 <body>
@@ -328,6 +367,9 @@ for (const cfg of CHART_CFGS) {{
   <div id="filter-bar">
     <span class="filter-label">Filter by Company:</span>
     {company_buttons}
+  </div>
+  <div id="view-bar">
+    <button id="btn-per-capita">Per Million Pop.</button>
   </div>
 
   {''.join(body_blocks)}

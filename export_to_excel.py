@@ -148,6 +148,18 @@ df_sites_pivot.columns.name = None
 CHART_COUNTRIES = ('Israel', 'Belgium', 'Switzerland', 'Austria', 'Sweden', 'Denmark', 'Norway', 'Ireland')
 CHART_YEARS     = list(range(2015, 2026))
 
+# Population in millions — World Bank WDI (2024-2025: estimates)
+POPULATION = {
+    "Israel":      [8.38,  8.54,  8.71,  8.88,  9.05,  9.22,  9.45,  9.66,  9.84,  10.01, 10.20],
+    "Belgium":     [11.24, 11.31, 11.35, 11.43, 11.51, 11.59, 11.59, 11.66, 11.74, 11.87, 11.95],
+    "Switzerland": [8.33,  8.40,  8.48,  8.55,  8.60,  8.67,  8.74,  8.82,  8.96,  9.10,  9.18],
+    "Austria":     [8.66,  8.74,  8.80,  8.85,  8.90,  8.93,  9.04,  9.10,  9.10,  9.15,  9.21],
+    "Sweden":      [9.80,  9.92,  10.07, 10.18, 10.29, 10.33, 10.42, 10.52, 10.55, 10.65, 10.75],
+    "Denmark":     [5.69,  5.73,  5.75,  5.80,  5.81,  5.82,  5.84,  5.88,  5.96,  6.03,  6.10],
+    "Norway":      [5.19,  5.23,  5.27,  5.30,  5.33,  5.37,  5.41,  5.43,  5.52,  5.59,  5.67],
+    "Ireland":     [4.63,  4.71,  4.78,  4.86,  4.94,  5.00,  5.13,  5.24,  5.31,  5.41,  5.51],
+}
+
 COUNTRY_COLORS_HEX = {
     "Israel":      "0038B8",
     "Belgium":     "E63946",
@@ -160,19 +172,28 @@ COUNTRY_COLORS_HEX = {
 }
 
 CHART_SPECS = [
-    # (data_sheet, chart_sheet,              chart_title,                                   y_label,          phase,    metric)
-    ("D-Ph1 Trials", "Chart - Phase 1 Trials", "Phase 1 — Trials Started per Year",    "Number of Trials", "PHASE1", "trials"),
-    ("D-Ph2 Trials", "Chart - Phase 2 Trials", "Phase 2 — Trials Started per Year",    "Number of Trials", "PHASE2", "trials"),
-    ("D-Ph3 Trials", "Chart - Phase 3 Trials", "Phase 3 — Trials Started per Year",    "Number of Trials", "PHASE3", "trials"),
-    ("D-All Trials",  "Chart - All Trials",     "All Phases — Trials per Year",          "Number of Trials", None,     "trials"),
-    ("D-Ph1 Sites",  "Chart - Phase 1 Sites",  "Phase 1 — Research Sites per Year",    "Research Sites",  "PHASE1", "sites"),
-    ("D-Ph2 Sites",  "Chart - Phase 2 Sites",  "Phase 2 — Research Sites per Year",    "Research Sites",  "PHASE2", "sites"),
-    ("D-Ph3 Sites",  "Chart - Phase 3 Sites",  "Phase 3 — Research Sites per Year",    "Research Sites",  "PHASE3", "sites"),
-    ("D-All Sites",   "Chart - All Sites",      "All Phases — Research Sites per Year",  "Research Sites",  None,     "sites"),
+    # (data_sheet,     chart_sheet,              chart_title,                              y_label,           phase,    metric,  per_capita)
+    ("D-Ph1 Trials",  "Chart - Ph1 Trials",      "Phase 1 — Trials per Year",             "Number of Trials", "PHASE1", "trials", False),
+    ("D-Ph2 Trials",  "Chart - Ph2 Trials",      "Phase 2 — Trials per Year",             "Number of Trials", "PHASE2", "trials", False),
+    ("D-Ph3 Trials",  "Chart - Ph3 Trials",      "Phase 3 — Trials per Year",             "Number of Trials", "PHASE3", "trials", False),
+    ("D-All Trials",  "Chart - All Trials",       "All Phases — Trials per Year",          "Number of Trials", None,     "trials", False),
+    ("D-Ph1 Sites",   "Chart - Ph1 Sites",        "Phase 1 — Research Sites per Year",    "Research Sites",   "PHASE1", "sites",  False),
+    ("D-Ph2 Sites",   "Chart - Ph2 Sites",        "Phase 2 — Research Sites per Year",    "Research Sites",   "PHASE2", "sites",  False),
+    ("D-Ph3 Sites",   "Chart - Ph3 Sites",        "Phase 3 — Research Sites per Year",    "Research Sites",   "PHASE3", "sites",  False),
+    ("D-All Sites",   "Chart - All Sites",         "All Phases — Research Sites per Year", "Research Sites",   None,     "sites",  False),
+    # Per-capita versions (per million population)
+    ("D-Ph1 Tr pM",   "Chart - Ph1 Trials pM",   "Phase 1 — Trials per Million Pop.",    "Trials per M Pop.", "PHASE1", "trials", True),
+    ("D-Ph2 Tr pM",   "Chart - Ph2 Trials pM",   "Phase 2 — Trials per Million Pop.",    "Trials per M Pop.", "PHASE2", "trials", True),
+    ("D-Ph3 Tr pM",   "Chart - Ph3 Trials pM",   "Phase 3 — Trials per Million Pop.",    "Trials per M Pop.", "PHASE3", "trials", True),
+    ("D-All Tr pM",   "Chart - All Trials pM",    "All Phases — Trials per Million Pop.", "Trials per M Pop.", None,     "trials", True),
+    ("D-Ph1 Si pM",   "Chart - Ph1 Sites pM",     "Phase 1 — Sites per Million Pop.",     "Sites per M Pop.",  "PHASE1", "sites",  True),
+    ("D-Ph2 Si pM",   "Chart - Ph2 Sites pM",     "Phase 2 — Sites per Million Pop.",     "Sites per M Pop.",  "PHASE2", "sites",  True),
+    ("D-Ph3 Si pM",   "Chart - Ph3 Sites pM",     "Phase 3 — Sites per Million Pop.",     "Sites per M Pop.",  "PHASE3", "sites",  True),
+    ("D-All Si pM",   "Chart - All Sites pM",      "All Phases — Sites per Million Pop.", "Sites per M Pop.",  None,     "sites",  True),
 ]
 
 
-def get_chart_pivot(conn, phase, metric):
+def get_chart_pivot(conn, phase, metric, per_capita=False):
     """Return DataFrame with Year as first column and one column per country."""
     country_in_str = ",".join(f"'{c}'" for c in CHART_COUNTRIES)
     phase_clause   = f"AND t.phase = '{phase}'" if phase else \
@@ -194,6 +215,14 @@ def get_chart_pivot(conn, phase, metric):
     pivot = (df.pivot(index="year", columns="country", values="value")
                .reindex(index=CHART_YEARS, columns=list(CHART_COUNTRIES))
                .fillna(0).astype(int))
+
+    if per_capita:
+        pivot = pivot.astype(float)
+        for i, yr in enumerate(CHART_YEARS):
+            for country in CHART_COUNTRIES:
+                pop = POPULATION[country][i]
+                pivot.at[yr, country] = round(float(pivot.at[yr, country]) / pop, 3) if pop else 0.0
+
     pivot.index.name = "Year"
     return pivot.reset_index()
 
@@ -287,8 +316,31 @@ with pd.ExcelWriter(OUTPUT_PATH, engine="openpyxl") as writer:
     wb = writer.book
     conn2 = sqlite3.connect(DB_PATH)
 
-    for data_sheet, chart_sheet, title, ylabel, phase, metric in CHART_SPECS:
-        df_pivot_chart = get_chart_pivot(conn2, phase, metric)
+    # Population sheet
+    ws_pop = wb.create_sheet("Population (millions)")
+    pop_header_fill = PatternFill(fill_type="solid", fgColor="1a1a2e")
+    pop_header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_cells = ["Country"] + [str(y) for y in CHART_YEARS]
+    for c_idx, h in enumerate(header_cells, 1):
+        cell = ws_pop.cell(row=1, column=c_idx, value=h)
+        cell.fill = pop_header_fill
+        cell.font = pop_header_font
+        cell.alignment = Alignment(horizontal="center")
+    for r_idx, country in enumerate(CHART_COUNTRIES, 2):
+        ws_pop.cell(row=r_idx, column=1, value=country).font = Font(bold=True)
+        for c_idx, pop_val in enumerate(POPULATION[country], 2):
+            ws_pop.cell(row=r_idx, column=c_idx, value=pop_val)
+    ws_pop.column_dimensions["A"].width = 16
+    for col in range(2, len(CHART_YEARS) + 2):
+        ws_pop.column_dimensions[get_column_letter(col)].width = 9
+    ws_pop.row_dimensions[1].height = 25
+    ws_pop.append([])
+    note_row = len(CHART_COUNTRIES) + 3
+    ws_pop.cell(row=note_row, column=1,
+                value="Source: World Bank World Development Indicators. 2024-2025: estimates.").font = Font(italic=True, color="888888")
+
+    for data_sheet, chart_sheet, title, ylabel, phase, metric, per_capita in CHART_SPECS:
+        df_pivot_chart = get_chart_pivot(conn2, phase, metric, per_capita)
         write_chart_data_sheet(wb, data_sheet, df_pivot_chart)
         add_line_chart(wb, data_sheet, chart_sheet, title, ylabel)
         print(f"  Added: {chart_sheet}")
