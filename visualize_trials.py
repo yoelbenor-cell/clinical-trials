@@ -281,8 +281,8 @@ function traces(agg) {{
     line: {{color: COLORS[ct] || '#888', width: 2}},
     marker: {{size: 6}},
     type: 'scatter',
-    hovertemplate: '<b>' + ct + '</b><br>Year: %{{x}}<br>' +
-                   (perCapita ? 'Value: %{{y:.3f}}' : 'Value: %{{y:,}}') +
+    hovertemplate: '<b style="font-size:14px">' + ct + '</b><br>Year: %{{x}}<br>' +
+                   (perCapita ? '%{{y:.3f}} per million' : '%{{y:,d}}') +
                    '<extra></extra>',
   }}));
 }}
@@ -294,7 +294,7 @@ function layout(title, ylabel, height) {{
              ticktext:YEARS.map(String), tickangle:-45}},
     yaxis: {{title: ylabel}},
     legend: {{title:{{text:'Country'}}, x:1.01, y:1, font:{{size:11}}}},
-    hovermode: 'x unified', template: 'plotly_white',
+    hovermode: 'closest', template: 'plotly_white',
     height: height, margin: {{r:180, t:60, b:80}},
   }};
 }}
