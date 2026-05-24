@@ -494,7 +494,7 @@ for (const cfg of CHART_CFGS) {{
     <span class="preset-label">Countries:</span>
     <button class="preset-btn active" id="preset-all">All ({len(ALL_COUNTRIES)})</button>
     <button class="preset-btn" id="preset-gdp">High GDP (&gt;$40k) &mdash; {len(PRESET_HIGH_GDP)} countries</button>
-    <button class="preset-btn" id="preset-pop">Similar Pop. to Israel &mdash; {len(PRESET_SIMILAR_POP)} countries</button>
+    <button class="preset-btn" id="preset-pop">Pop {IRELAND_POP:.1f}M&ndash;{BELGIUM_POP:.1f}M &mdash; {len(PRESET_SIMILAR_POP)} countries</button>
     <button class="preset-btn" id="preset-isr">Similar to Israel &mdash; {len(PRESET_SIMILAR_ISRAEL)} countries</button>
     <button class="preset-btn" id="preset-select">Select Countries &#9660;</button>
 
