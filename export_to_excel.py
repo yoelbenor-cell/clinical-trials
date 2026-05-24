@@ -52,7 +52,14 @@ def freeze_and_filter(ws):
 
 conn = sqlite3.connect(DB_PATH)
 
-FOCUS_COUNTRIES = ('Israel','Belgium','Switzerland','Austria','Sweden','Denmark','Norway','Ireland')
+FOCUS_COUNTRIES = (
+    'Israel',
+    'Germany', 'France', 'United Kingdom', 'Italy', 'Spain', 'Poland',
+    'Netherlands', 'Belgium', 'Sweden', 'Austria', 'Denmark', 'Finland',
+    'Czechia', 'Romania', 'Hungary', 'Portugal', 'Greece', 'Slovakia',
+    'Bulgaria', 'Croatia', 'Lithuania', 'Latvia', 'Estonia', 'Slovenia',
+    'Cyprus', 'Luxembourg', 'Malta', 'Norway', 'Iceland', 'Switzerland',
+)
 COUNTRY_IN = ",".join(f"'{c}'" for c in FOCUS_COUNTRIES)
 
 # --- Sheet 1: All Trials ---
@@ -150,14 +157,39 @@ CHART_YEARS     = list(range(2015, 2026))
 
 # Population in millions — World Bank WDI (2024-2025: estimates)
 POPULATION = {
-    "Israel":      [8.38,  8.54,  8.71,  8.88,  9.05,  9.22,  9.45,  9.66,  9.84,  10.01, 10.20],
-    "Belgium":     [11.24, 11.31, 11.35, 11.43, 11.51, 11.59, 11.59, 11.66, 11.74, 11.87, 11.95],
-    "Switzerland": [8.33,  8.40,  8.48,  8.55,  8.60,  8.67,  8.74,  8.82,  8.96,  9.10,  9.18],
-    "Austria":     [8.66,  8.74,  8.80,  8.85,  8.90,  8.93,  9.04,  9.10,  9.10,  9.15,  9.21],
-    "Sweden":      [9.80,  9.92,  10.07, 10.18, 10.29, 10.33, 10.42, 10.52, 10.55, 10.65, 10.75],
-    "Denmark":     [5.69,  5.73,  5.75,  5.80,  5.81,  5.82,  5.84,  5.88,  5.96,  6.03,  6.10],
-    "Norway":      [5.19,  5.23,  5.27,  5.30,  5.33,  5.37,  5.41,  5.43,  5.52,  5.59,  5.67],
-    "Ireland":     [4.63,  4.71,  4.78,  4.86,  4.94,  5.00,  5.13,  5.24,  5.31,  5.41,  5.51],
+    #                         2015   2016   2017   2018   2019   2020   2021   2022   2023   2024   2025
+    "Israel":          [ 8.38,  8.54,  8.71,  8.88,  9.05,  9.22,  9.45,  9.66,  9.84, 10.01, 10.20],
+    "Germany":         [81.69, 82.18, 82.66, 83.02, 83.15, 83.24, 83.20, 84.08, 84.36, 84.50, 84.60],
+    "France":          [64.40, 64.73, 65.02, 65.27, 65.56, 65.85, 66.32, 67.37, 68.02, 68.40, 68.70],
+    "United Kingdom":  [65.13, 65.65, 66.06, 66.44, 66.80, 67.08, 67.22, 67.60, 67.74, 67.90, 68.10],
+    "Italy":           [60.80, 60.65, 60.58, 60.48, 60.24, 59.64, 59.24, 58.97, 58.85, 58.60, 58.40],
+    "Spain":           [46.45, 46.48, 46.53, 46.66, 46.94, 47.35, 47.40, 47.42, 47.42, 47.50, 47.60],
+    "Poland":          [37.99, 37.97, 37.97, 37.98, 37.97, 37.95, 37.75, 37.65, 37.63, 37.55, 37.50],
+    "Netherlands":     [16.90, 16.99, 17.08, 17.18, 17.28, 17.41, 17.48, 17.59, 17.88, 18.00, 18.10],
+    "Belgium":         [11.24, 11.31, 11.35, 11.43, 11.51, 11.59, 11.59, 11.66, 11.74, 11.87, 11.95],
+    "Sweden":          [ 9.80,  9.92, 10.07, 10.18, 10.29, 10.33, 10.42, 10.52, 10.55, 10.65, 10.75],
+    "Austria":         [ 8.66,  8.74,  8.80,  8.85,  8.90,  8.93,  9.04,  9.10,  9.10,  9.15,  9.21],
+    "Denmark":         [ 5.69,  5.73,  5.75,  5.80,  5.81,  5.82,  5.84,  5.88,  5.96,  6.03,  6.10],
+    "Finland":         [ 5.47,  5.49,  5.51,  5.52,  5.52,  5.53,  5.54,  5.56,  5.57,  5.58,  5.60],
+    "Czechia":         [10.55, 10.57, 10.61, 10.65, 10.67, 10.70, 10.79, 10.83, 10.88, 10.90, 10.95],
+    "Romania":         [19.87, 19.67, 19.54, 19.47, 19.36, 19.26, 18.95, 19.03, 18.88, 18.70, 18.55],
+    "Hungary":         [ 9.84,  9.80,  9.77,  9.77,  9.77,  9.75,  9.71,  9.69,  9.68,  9.65,  9.62],
+    "Portugal":        [10.34, 10.31, 10.29, 10.28, 10.27, 10.30, 10.33, 10.34, 10.24, 10.20, 10.15],
+    "Greece":          [10.84, 10.76, 10.72, 10.73, 10.72, 10.72, 10.68, 10.62, 10.43, 10.40, 10.38],
+    "Slovakia":        [ 5.42,  5.43,  5.44,  5.45,  5.46,  5.46,  5.46,  5.46,  5.47,  5.48,  5.50],
+    "Bulgaria":        [ 7.15,  7.10,  7.05,  6.97,  6.90,  6.52,  6.52,  6.52,  6.45,  6.40,  6.35],
+    "Croatia":         [ 4.20,  4.17,  4.15,  4.09,  4.07,  4.05,  3.89,  3.88,  3.86,  3.85,  3.84],
+    "Lithuania":       [ 2.92,  2.89,  2.85,  2.81,  2.79,  2.79,  2.81,  2.89,  2.92,  2.93,  2.94],
+    "Latvia":          [ 2.00,  1.97,  1.95,  1.93,  1.92,  1.91,  1.85,  1.83,  1.82,  1.82,  1.83],
+    "Estonia":         [ 1.31,  1.31,  1.32,  1.32,  1.33,  1.33,  1.33,  1.37,  1.37,  1.37,  1.38],
+    "Slovenia":        [ 2.06,  2.07,  2.07,  2.07,  2.09,  2.10,  2.11,  2.11,  2.12,  2.12,  2.13],
+    "Cyprus":          [ 1.17,  1.17,  1.18,  1.19,  1.20,  1.21,  1.22,  1.26,  1.26,  1.28,  1.30],
+    "Luxembourg":      [ 0.57,  0.58,  0.59,  0.61,  0.63,  0.63,  0.63,  0.65,  0.67,  0.68,  0.69],
+    "Malta":           [ 0.44,  0.46,  0.47,  0.48,  0.50,  0.52,  0.52,  0.53,  0.53,  0.54,  0.55],
+    "Norway":          [ 5.19,  5.23,  5.27,  5.30,  5.33,  5.37,  5.41,  5.43,  5.52,  5.59,  5.67],
+    "Iceland":         [ 0.33,  0.34,  0.34,  0.35,  0.36,  0.37,  0.37,  0.37,  0.37,  0.37,  0.38],
+    "Ireland":         [ 4.63,  4.71,  4.78,  4.86,  4.94,  5.00,  5.13,  5.24,  5.31,  5.41,  5.51],
+    "Switzerland":     [ 8.33,  8.40,  8.48,  8.55,  8.60,  8.67,  8.74,  8.82,  8.96,  9.10,  9.18],
 }
 
 COUNTRY_COLORS_HEX = {
@@ -326,16 +358,16 @@ with pd.ExcelWriter(OUTPUT_PATH, engine="openpyxl") as writer:
         cell.fill = pop_header_fill
         cell.font = pop_header_font
         cell.alignment = Alignment(horizontal="center")
-    for r_idx, country in enumerate(CHART_COUNTRIES, 2):
+    for r_idx, country in enumerate(FOCUS_COUNTRIES, 2):
         ws_pop.cell(row=r_idx, column=1, value=country).font = Font(bold=True)
         for c_idx, pop_val in enumerate(POPULATION[country], 2):
             ws_pop.cell(row=r_idx, column=c_idx, value=pop_val)
-    ws_pop.column_dimensions["A"].width = 16
+    ws_pop.column_dimensions["A"].width = 18
     for col in range(2, len(CHART_YEARS) + 2):
         ws_pop.column_dimensions[get_column_letter(col)].width = 9
     ws_pop.row_dimensions[1].height = 25
     ws_pop.append([])
-    note_row = len(CHART_COUNTRIES) + 3
+    note_row = len(FOCUS_COUNTRIES) + 3
     ws_pop.cell(row=note_row, column=1,
                 value="Source: World Bank World Development Indicators. 2024-2025: estimates.").font = Font(italic=True, color="888888")
 
